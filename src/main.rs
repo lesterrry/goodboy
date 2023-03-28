@@ -14,6 +14,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 mod strings;
 
@@ -43,15 +44,21 @@ fn report(with_msg: &str, format: Format, die: bool) {
 	}
 }
 #[cfg(target_os = "windows")]
-fn report(with_msg: &str, format: Format) {
+fn report(with_msg: &str, format: Format, die: bool) {
 	let marker: String;
 	match format {
 		Format::Error => marker = format!("{}", ERR),
 		Format::Success => marker = format!("{}", SCS),
 		Format::Warning => marker = format!("{}", WRN),
 	}
-	println!("{}{}{}", marker, with_msg);
-	std::process::exit(0)
+	println!("{}{}", marker, with_msg);
+	if die {
+		std::process::exit(0)
+	}
+}
+fn save_config(config: &Config, file: &PathBuf) {
+	let ser = toml::to_vec(&config).unwrap();
+	fs::write(file, ser).unwrap();
 }
 
 fn main() {
@@ -60,6 +67,7 @@ fn main() {
 		.author(PKG_AUTHORS)
 		.subcommand(SubCommand::with_name(RESET_CMD).about(RESET_CMD_DESCRIPTION))
 		.subcommand(SubCommand::with_name(REVEAL_CMD).about(REVEAL_CMD_DESCRIPTION))
+		.subcommand(SubCommand::with_name(EDIT_CMD).about(EDIT_CMD_DESCRIPTION))
 		.subcommand(
 			SubCommand::with_name(ADDBOT_CMD)
 				.about(ADDBOT_CMD_DESCRIPTION)
@@ -135,8 +143,7 @@ fn main() {
 				admin_id: admin_id,
 				bots: HashMap::new(),
 			};
-			let ser = toml::to_vec(&config).unwrap();
-			fs::write(&config_file, ser).unwrap();
+			save_config(&config, &config_file);
 		}
 	} else {
 		panic!("{}", CONFIGDIR_ACCESS_FAIL);
@@ -147,11 +154,15 @@ fn main() {
 		println!("{}{}", ADMINID_PREDICATE, config.admin_id);
 		println!("{}", BOTS_PREDICATE);
 		for (k, _) in config.bots.iter() {
-			println!("{}", k)
+			println!("  {}", k)
 		}
-	}
-
-	if let Some(matches) = matches.subcommand_matches(ADDBOT_CMD) {
+	} else if matches.subcommand_matches(EDIT_CMD).is_some() {
+		println!("{}", CONFIGFILE_EDITING);
+		Command::new("nano")
+			.arg(&config_file.into_os_string())
+			.status()
+			.expect(CONFIGFILE_EDIT_FAIL);
+	} else if let Some(matches) = matches.subcommand_matches(ADDBOT_CMD) {
 		println!("{}", BOT_ADDING);
 		let name = matches.value_of(BOTNAME_ARG).unwrap();
 		if let Entry::Occupied(_) = config.bots.entry(name.to_string()) {
@@ -160,22 +171,16 @@ fn main() {
 		println!("{}", TOKEN_PROMPT);
 		let token = read_password().expect(INPUT_FAIL);
 		config.bots.insert(name.to_string(), token);
-		let ser = toml::to_vec(&config).unwrap();
-		fs::write(&config_file, ser).unwrap();
+		save_config(&config, &config_file);
 		report(ADDBOT_SUCCESS, Format::Success, true)
-	}
-
-	if let Some(matches) = matches.subcommand_matches(RMBOT_CMD) {
+	} else if let Some(matches) = matches.subcommand_matches(RMBOT_CMD) {
 		println!("{}", BOT_REMOVING);
 		let name = matches.value_of(BOTNAME_ARG).unwrap();
 		if let Entry::Vacant(_) = config.bots.entry(name.to_string()) {
 			report(RMBOT_FAIL, Format::Error, true)
 		}
 		config.bots.remove(name);
-		// TODO:
-		// Closure or smth not to repeat shit constantly. Maybe just move these out of scope to do pre-quit
-		let ser = toml::to_vec(&config).unwrap();
-		fs::write(&config_file, ser).unwrap();
+		save_config(&config, &config_file);
 		report(RMBOT_SUCCESS, Format::Success, true)
 	}
 }

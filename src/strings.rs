@@ -17,6 +17,8 @@ pub mod commands {
 	pub const RMBOT_CMD_DESCRIPTION: &str = "Remove saved bot token";
 	pub const RUN_CMD: &str = "run";
 	pub const RUN_CMD_DESCRIPTION: &str = "Send messages";
+	pub const EDIT_CMD: &str = "edit";
+	pub const EDIT_CMD_DESCRIPTION: &str = "manually edit config file";
 	pub const BOTNAME_ARG: &str = "BOT_NAME";
 	pub const BOTNAME_ARG_DESCRIPTION: &str = "Bot name to use";
 	pub const DATABASE_ARG: &str = "DATABASE";
@@ -53,11 +55,13 @@ pub mod messages {
 	pub const RMBOT_SUCCESS: &str = "Removed saved bot";
 	pub const CONFIGFILE_CREATING: &str = "Creating new config file...";
 	pub const CONFIGFILE_REMOVING: &str = "Removing config file...";
+	pub const CONFIGFILE_EDITING: &str = "Opening config file for editing...";
 	pub const CONFIG_REVEALING: &str = "Revealing config data:";
 	pub const BOT_ADDING: &str = "Adding new bot...";
 	pub const BOT_REMOVING: &str = "Removing saved bot...";
 	pub const CONFIGDIR_CREATING_FAIL: &str = "Couldn't create directory";
 	pub const CONFIGDIR_ACCESS_FAIL: &str = "Couldn't access configuration directory";
+	pub const CONFIGFILE_EDIT_FAIL: &str = "Shell failure";
 	pub const INPUT_FAIL: &str = "Input error";
 	pub const ADDBOT_FAIL: &str = "Bot with this name already exists";
 	pub const RMBOT_FAIL: &str = "Bot with this name does not exist";

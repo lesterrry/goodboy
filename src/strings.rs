@@ -18,7 +18,7 @@ pub mod commands {
 	pub const RUN_CMD: &str = "run";
 	pub const RUN_CMD_DESCRIPTION: &str = "Send messages";
 	pub const EDIT_CMD: &str = "edit";
-	pub const EDIT_CMD_DESCRIPTION: &str = "manually edit config file";
+	pub const EDIT_CMD_DESCRIPTION: &str = "Manually edit config file";
 	pub const BOTNAME_ARG: &str = "BOT_NAME";
 	pub const BOTNAME_ARG_DESCRIPTION: &str = "Bot name to use";
 	pub const DATABASE_ARG: &str = "DATABASE";
@@ -44,6 +44,7 @@ pub mod env {
 pub mod system {
 	pub const VENDOR_NAME: &str = "aydar-media";
 	pub const CONFIG_FILE_NAME: &str = "config.toml";
+	pub const MANUAL_EDITOR: &str = "nano";
 }
 
 #[rustfmt::skip]
@@ -84,6 +85,7 @@ pub mod markers {
 	pub const BLD: &str = "\x1b[1m";
 	pub const RES: &str = "\x1b[0m";
 	pub const DIV: &str = "=========================";
+	pub const IND: &str = "  ";
 }
 
 #[rustfmt::skip]
@@ -94,4 +96,5 @@ pub mod markers {
 	pub const SCS: &str = "SUCCESS: ";
 	pub const WRN: &str = "WARN: ";
 	pub const DIV: &str = "=========================";
+	pub const IND: &str = "  ";
 }

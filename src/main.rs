@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use telegram_bot::*;
 
 mod strings;
 
@@ -154,11 +155,11 @@ fn main() {
 		println!("{}{}", ADMINID_PREDICATE, config.admin_id);
 		println!("{}", BOTS_PREDICATE);
 		for (k, _) in config.bots.iter() {
-			println!("  {}", k)
+			println!("{}{}", IND, k)
 		}
 	} else if matches.subcommand_matches(EDIT_CMD).is_some() {
 		println!("{}", CONFIGFILE_EDITING);
-		Command::new("nano")
+		Command::new(MANUAL_EDITOR)
 			.arg(&config_file.into_os_string())
 			.status()
 			.expect(CONFIGFILE_EDIT_FAIL);
@@ -182,5 +183,12 @@ fn main() {
 		config.bots.remove(name);
 		save_config(&config, &config_file);
 		report(RMBOT_SUCCESS, Format::Success, true)
+	} else if let Some(matches) = matches.subcommand_matches(RUN_CMD) {
+		println!("{}", "Preparing to send messages...");
+		let name = matches.value_of(BOTNAME_ARG).unwrap();
+		match config.bots.entry(name.to_string()) {
+			Entry::Vacant(_) => report(RMBOT_FAIL, Format::Error, true),
+			Entry::Occupied(e) => println!("{}", e.get()),
+		}
 	}
 }

@@ -25,6 +25,10 @@ pub mod commands {
 	pub const DATABASE_ARG_DESCRIPTION: &str = "Path to .db file";
 	pub const DATABASE_ARG_SHORT: &str = "d";
 	pub const DATABASE_ARG_LONG: &str = "database";
+	pub const TABLE_ARG: &str = "TABLE";
+	pub const TABLE_ARG_DESCRIPTION: &str = "Title of sqlite table to use";
+	pub const TABLE_ARG_SHORT: &str = "t";
+	pub const TABLE_ARG_LONG: &str = "table";
 	pub const COLUMN_ARG: &str = "COLUMN";
 	pub const COLUMN_ARG_DESCRIPTION: &str = "Title of column containing user IDs. Defaults to 'id'";
 	pub const COLUMN_ARG_SHORT: &str = "c";
@@ -45,6 +49,7 @@ pub mod system {
 	pub const VENDOR_NAME: &str = "aydar-media";
 	pub const CONFIG_FILE_NAME: &str = "config.toml";
 	pub const MANUAL_EDITOR: &str = "nano";
+	pub const DEFAULT_COLUMN_TITLE: &str = "id";
 }
 
 #[rustfmt::skip]
@@ -68,6 +73,8 @@ pub mod messages {
 	pub const RMBOT_FAIL: &str = "Bot with this name does not exist";
 	pub const ADMINID_PROMPT: &str = "Enter admin user_id for initial testing: ";
 	pub const TOKEN_PROMPT: &str = "Enter bot token: ";
+	pub const DATABASE_PROMPT: &str = "Enter path to database: ";
+	pub const TABLE_PROMPT: &str = "Enter table title: ";
 	pub const ERROR_PREDICATE: &str = "error: ";
 	pub const SUCCESS_PREDICATE: &str = "success: ";
 	pub const WARNING_PREDICATE: &str = "warning: ";

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
-use telegram_bot::*;
+use std::panic::set_hook;
 
 mod strings;
 
@@ -25,6 +25,7 @@ struct Config {
 	bots: HashMap<String, String>,
 }
 
+#[allow(dead_code)]
 enum Format {
 	Error,
 	Success,
@@ -32,7 +33,7 @@ enum Format {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-fn report(with_msg: &str, format: Format, die: bool) {
+fn report(with_msg: &str, format: Format) {
 	let marker: String;
 	match format {
 		Format::Error => marker = format!("{}{}{}{}", ERR, BLD, ERROR_PREDICATE, RES),
@@ -40,12 +41,9 @@ fn report(with_msg: &str, format: Format, die: bool) {
 		Format::Warning => marker = format!("{}{}{}{}", WRN, BLD, WARNING_PREDICATE, RES),
 	}
 	println!("{}{}", marker, with_msg);
-	if die {
-		std::process::exit(0)
-	}
 }
 #[cfg(target_os = "windows")]
-fn report(with_msg: &str, format: Format, die: bool) {
+fn report(with_msg: &str, format: Format) {
 	let marker: String;
 	match format {
 		Format::Error => marker = format!("{}", ERR),
@@ -53,9 +51,6 @@ fn report(with_msg: &str, format: Format, die: bool) {
 		Format::Warning => marker = format!("{}", WRN),
 	}
 	println!("{}{}", marker, with_msg);
-	if die {
-		std::process::exit(0)
-	}
 }
 fn save_config(config: &Config, file: &PathBuf) {
 	let ser = toml::to_vec(&config).unwrap();
@@ -63,6 +58,11 @@ fn save_config(config: &Config, file: &PathBuf) {
 }
 
 fn main() {
+	set_hook(Box::new(|info| {
+        if let Some(s) = info.payload().downcast_ref::<String>() {
+            report(s, Format::Error)
+        }
+    }));
 	let matches = App::new(PKG_NAME)
 		.version(PKG_VERSION)
 		.author(PKG_AUTHORS)
@@ -106,6 +106,13 @@ fn main() {
 						.takes_value(true),
 				)
 				.arg(
+					Arg::with_name(TABLE_ARG)
+						.short(TABLE_ARG_SHORT)
+						.long(TABLE_ARG_LONG)
+						.help(TABLE_ARG_DESCRIPTION)
+						.takes_value(true),
+				)
+				.arg(
 					Arg::with_name(COLUMN_ARG)
 						.short(COLUMN_ARG_SHORT)
 						.long(COLUMN_ARG_LONG)
@@ -129,9 +136,7 @@ fn main() {
 			if matches.subcommand_matches(RESET_CMD).is_some() {
 				println!("{}", CONFIGFILE_REMOVING);
 				fs::remove_file(config_file).expect(DELETION_FAIL);
-				report(RESET_SUCCESS, Format::Success, true);
-				// TODO:
-				// I have to somehow convince rustc that nothing ever happens after `report`
+				report(RESET_SUCCESS, Format::Success);
 				std::process::exit(0)
 			}
 			let content = fs::read(&config_file).unwrap();
@@ -167,28 +172,41 @@ fn main() {
 		println!("{}", BOT_ADDING);
 		let name = matches.value_of(BOTNAME_ARG).unwrap();
 		if let Entry::Occupied(_) = config.bots.entry(name.to_string()) {
-			report(ADDBOT_FAIL, Format::Error, true)
+			panic!("{}", ADDBOT_FAIL)
 		}
 		println!("{}", TOKEN_PROMPT);
 		let token = read_password().expect(INPUT_FAIL);
 		config.bots.insert(name.to_string(), token);
 		save_config(&config, &config_file);
-		report(ADDBOT_SUCCESS, Format::Success, true)
+		report(ADDBOT_SUCCESS, Format::Success)
 	} else if let Some(matches) = matches.subcommand_matches(RMBOT_CMD) {
 		println!("{}", BOT_REMOVING);
 		let name = matches.value_of(BOTNAME_ARG).unwrap();
 		if let Entry::Vacant(_) = config.bots.entry(name.to_string()) {
-			report(RMBOT_FAIL, Format::Error, true)
+			panic!("{}", RMBOT_FAIL)
 		}
 		config.bots.remove(name);
 		save_config(&config, &config_file);
-		report(RMBOT_SUCCESS, Format::Success, true)
+		report(RMBOT_SUCCESS, Format::Success)
 	} else if let Some(matches) = matches.subcommand_matches(RUN_CMD) {
 		println!("{}", "Preparing to send messages...");
 		let name = matches.value_of(BOTNAME_ARG).unwrap();
+		let token: &str;
 		match config.bots.entry(name.to_string()) {
-			Entry::Vacant(_) => report(RMBOT_FAIL, Format::Error, true),
-			Entry::Occupied(e) => println!("{}", e.get()),
+			Entry::Vacant(_) => panic!("{}", RMBOT_FAIL),
+			Entry::Occupied(e) => token = e.get(),
 		}
+		let db = if let Some(a) = matches.value_of(DATABASE_ARG) { a.to_string() } else { readline_editor.readline(DATABASE_PROMPT).expect(INPUT_FAIL).trim().to_string() };
+		let table = if let Some(a) = matches.value_of(TABLE_ARG) { a.to_string() } else { readline_editor.readline(TABLE_PROMPT).expect(INPUT_FAIL).trim().to_string() };
+		let column = if let Some(a) = matches.value_of(COLUMN_ARG) { a.to_string() } else { DEFAULT_COLUMN_TITLE.to_string() };
+		let connection = sqlite::Connection::open_with_flags(db, sqlite::OpenFlags::new().set_read_only()).expect("Couldn't access database file");
+		let query = format!("SELECT {} FROM {}", column, table);
+		connection.iterate(query, |pairs| {
+			for &(key, value) in pairs.iter() {
+				println!("{} = {}", key, value.unwrap());
+			}
+			true
+		})
+		.expect("Database error");
 	}
 }
